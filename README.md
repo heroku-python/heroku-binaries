@@ -1,8 +1,6 @@
-# Bob: The Binary Build Toolkit
+# Heroku Builder
 
-This repo exists as a framework for the compilation and deployment of binaries and libraries on Heroku.
-
-It is inspired by (and extracted from) [kennethreitz/python-versions](https://github.com/kennethreitz/python-versions).
+Heroku
 
 ## Intended Design
 
@@ -22,7 +20,7 @@ It is inspired by (and extracted from) [kennethreitz/python-versions](https://gi
  * `$ heroku create build-toolkit-python-staging --buildpack https://github.com/kennethreitz/conda-buildpack.git`
  * `$ heroku config:set AWS_ACCESS_KEY_ID=xxx AWS_SECRET_ACCESS_KEY=xxx S3_BUCKET=xxx`
 
-Now that your Heroku app for building is created, push a repo containing your formula to the app (e.g. the python buildpack repo). 
+Now that your Heroku app for building is created, push a repo containing your formula to the app (e.g. the python buildpack repo).
 
 ```
 $ heroku run bash
@@ -31,3 +29,10 @@ $ bob build runtimes/python-2.7.6
 $ bob deploy runtimes/python-2.7.6
 
 
+### Credits
+
+This project is an expansion on others' work. Specifically:
+
+- Forked and renamed from [Bob Builder](https://github.com/heroku-python/bob-builder)
+
+- Original project [python-versions](https://github.com/kennethreitz/python-versions)
