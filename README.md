@@ -1,37 +1,23 @@
-# Heroku Builder
+# Heroku Binaries
 
-Heroku
+Heroku Binaries is a tool for building Python and other resources from source.
 
-## Intended Design
+## Status: Alpha
 
-- Flexible type hierarchy
-- Flat dependency resolution
-- Version agnostic (careful curation and naming conventions preferred)
-- Import already-deployed sub-dependencies during a build (optionally fetch from `UPSTREAM_S3_BUCKET`)
+This project is under construction. Current Roadmap:
 
-## Powered By
-
-- Bash, mostly
-- A litle bit of Python
-- Boto
-
-## Getting Started (Staging)
-
- * `$ heroku create build-toolkit-python-staging --buildpack https://github.com/kennethreitz/conda-buildpack.git`
- * `$ heroku config:set AWS_ACCESS_KEY_ID=xxx AWS_SECRET_ACCESS_KEY=xxx S3_BUCKET=xxx`
-
-Now that your Heroku app for building is created, push a repo containing your formula to the app (e.g. the python buildpack repo).
-
-```
-$ heroku run bash
-
-$ bob build runtimes/python-2.7.6
-$ bob deploy runtimes/python-2.7.6
+[ ] Black formatting
+[ ] Upgrade Python to 3.7
+[ ] TestsssSSsssss
+[ ] [Begins](https://begins.readthedocs.io/en/latest/) CLI overhaul
+[ ] Type Annotations!
 
 
 ### Credits
 
-This project is an expansion on others' work. Specifically:
+This project is an expansion on others' work, for Heroku's needs.
+
+Specifically:
 
 - Forked and renamed from [Bob Builder](https://github.com/heroku-python/bob-builder)
 
