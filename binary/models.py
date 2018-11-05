@@ -9,47 +9,57 @@ import sys
 from tempfile import mkstemp, mkdtemp
 
 from .utils import (
-    archive_tree, extract_tree, iter_marker_lines, mkdir_p,
-    pipe, print_stderr, process, S3ConnectionHandler)
+    archive_tree,
+    extract_tree,
+    iter_marker_lines,
+    mkdir_p,
+    pipe,
+    print_stderr,
+    process,
+    S3ConnectionHandler,
+)
 
 
-WORKSPACE = os.environ.get('WORKSPACE_DIR', 'workspace')
-DEFAULT_BUILD_PATH = os.environ.get('DEFAULT_BUILD_PATH', '/app/.heroku/')
-S3_BUCKET = os.environ.get('S3_BUCKET')
-S3_PREFIX = os.environ.get('S3_PREFIX', '')
-UPSTREAM_S3_BUCKET = os.environ.get('UPSTREAM_S3_BUCKET')
-UPSTREAM_S3_PREFIX = os.environ.get('UPSTREAM_S3_PREFIX', '')
+WORKSPACE = os.environ.get("WORKSPACE_DIR", "workspace")
+DEFAULT_BUILD_PATH = os.environ.get("DEFAULT_BUILD_PATH", "/app/.heroku/")
+S3_BUCKET = os.environ.get("S3_BUCKET")
+S3_PREFIX = os.environ.get("S3_PREFIX", "")
+UPSTREAM_S3_BUCKET = os.environ.get("UPSTREAM_S3_BUCKET")
+UPSTREAM_S3_PREFIX = os.environ.get("UPSTREAM_S3_PREFIX", "")
 
 # Append a slash for backwards compatibility.
-if S3_PREFIX and not S3_PREFIX.endswith('/'):
-    S3_PREFIX = '{0}/'.format(S3_PREFIX)
-if UPSTREAM_S3_PREFIX and not UPSTREAM_S3_PREFIX.endswith('/'):
-    UPSTREAM_S3_PREFIX = '{0}/'.format(UPSTREAM_S3_PREFIX)
+if S3_PREFIX and not S3_PREFIX.endswith("/"):
+    S3_PREFIX = "{0}/".format(S3_PREFIX)
+if UPSTREAM_S3_PREFIX and not UPSTREAM_S3_PREFIX.endswith("/"):
+    UPSTREAM_S3_PREFIX = "{0}/".format(UPSTREAM_S3_PREFIX)
 
-DEPS_MARKER = '# Build Deps: '
-BUILD_PATH_MARKER = '# Build Path: '
+DEPS_MARKER = "# Build Deps: "
+BUILD_PATH_MARKER = "# Build Path: "
 
 # Make stdin/out as unbuffered as possible via file descriptor modes.
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
+sys.stdout = os.fdopen(sys.stdout.fileno(), "w", 0)
+sys.stderr = os.fdopen(sys.stderr.fileno(), "w", 0)
 
 
 class Formula(object):
-
     def __init__(self, path):
         self.path = path
         self.archived_path = None
 
         if not S3_BUCKET:
-            print_stderr('The environment variable S3_BUCKET must be set to the bucket name.')
+            print_stderr(
+                "The environment variable S3_BUCKET must be set to the bucket name."
+            )
             sys.exit(1)
 
         s3 = S3ConnectionHandler()
         self.bucket = s3.get_bucket(S3_BUCKET)
-        self.upstream = s3.get_bucket(UPSTREAM_S3_BUCKET) if UPSTREAM_S3_BUCKET else None
+        self.upstream = (
+            s3.get_bucket(UPSTREAM_S3_BUCKET) if UPSTREAM_S3_BUCKET else None
+        )
 
     def __repr__(self):
-        return '<Formula {}>'.format(self.path)
+        return "<Formula {}>".format(self.path)
 
     @property
     def workspace_path(self):
@@ -73,7 +83,7 @@ class Formula(object):
 
         for result in iter_marker_lines(DEPS_MARKER, self.full_path):
             # Split on both space and comma.
-            result = re.split(r'[ ,]+', result)
+            result = re.split(r"[ ,]+", result)
             depends.extend(result)
 
             return depends
@@ -94,26 +104,28 @@ class Formula(object):
         deps = self.depends_on
 
         if deps:
-            print('Fetching dependencies... found {}:'.format(len(deps)))
+            print("Fetching dependencies... found {}:".format(len(deps)))
 
             for dep in deps:
-                print('  - {}'.format(dep))
+                print("  - {}".format(dep))
 
-                key_name = '{}{}.tar.gz'.format(S3_PREFIX, dep)
+                key_name = "{}{}.tar.gz".format(S3_PREFIX, dep)
                 key = self.bucket.get_key(key_name)
 
                 if not key and self.upstream:
-                    print('    Not found in S3_BUCKET, trying UPSTREAM_S3_BUCKET...')
-                    key_name = '{}{}.tar.gz'.format(UPSTREAM_S3_PREFIX, dep)
+                    print("    Not found in S3_BUCKET, trying UPSTREAM_S3_BUCKET...")
+                    key_name = "{}{}.tar.gz".format(UPSTREAM_S3_PREFIX, dep)
                     key = self.upstream.get_key(key_name)
 
                 if not key:
-                    print_stderr('Archive {} does not exist.\n'
-                                 'Please deploy it to continue.'.format(key_name))
+                    print_stderr(
+                        "Archive {} does not exist.\n"
+                        "Please deploy it to continue.".format(key_name)
+                    )
                     sys.exit(1)
 
                 # Grab the Dep from S3, download it to a temp file.
-                archive = mkstemp(prefix='bob-dep-', suffix='.tar.gz')[1]
+                archive = mkstemp(prefix="bob-dep-", suffix=".tar.gz")[1]
                 key.get_contents_to_filename(archive)
 
                 # Extract the Dep to the appropriate location.
@@ -124,15 +136,15 @@ class Formula(object):
     def build(self):
         # Prepare build directory.
         if os.path.exists(self.build_path):
-                shutil.rmtree(self.build_path)
+            shutil.rmtree(self.build_path)
         mkdir_p(self.build_path)
 
         self.resolve_deps()
 
         # Temporary directory where work will be carried out, because of David.
-        cwd_path = mkdtemp(prefix='bob-')
+        cwd_path = mkdtemp(prefix="bob-")
 
-        print('Building formula {} in {}:\n'.format(self.path, cwd_path))
+        print("Building formula {} in {}:\n".format(self.path, cwd_path))
 
         # Execute the formula script.
         cmd = [self.full_path, self.build_path]
@@ -142,17 +154,17 @@ class Formula(object):
         p.wait()
 
         if p.returncode != 0:
-            print_stderr('Formula exited with return code {}.'.format(p.returncode))
+            print_stderr("Formula exited with return code {}.".format(p.returncode))
             sys.exit(1)
 
-        print('\nBuild complete: {}'.format(self.build_path))
+        print("\nBuild complete: {}".format(self.build_path))
 
     def archive(self):
         """Archives the build directory as a tar.gz."""
-        archive = mkstemp(prefix='bob-build-', suffix='.tar.gz')[1]
+        archive = mkstemp(prefix="bob-build-", suffix=".tar.gz")[1]
         archive_tree(self.build_path, archive)
 
-        print('Created: {}'.format(archive))
+        print("Created: {}".format(archive))
         self.archived_path = archive
 
     def deploy(self, allow_overwrite=False):
@@ -160,25 +172,27 @@ class Formula(object):
         assert self.archived_path
 
         if self.bucket.connection.anon:
-            print_stderr('Deploy requires valid AWS credentials.')
+            print_stderr("Deploy requires valid AWS credentials.")
             sys.exit(1)
 
-        key_name = '{}{}.tar.gz'.format(S3_PREFIX, self.path)
+        key_name = "{}{}.tar.gz".format(S3_PREFIX, self.path)
         key = self.bucket.get_key(key_name)
 
         if key:
             if not allow_overwrite:
-                print_stderr('Archive {} already exists.\n'
-                             'Use the --overwrite flag to continue.'.format(key_name))
+                print_stderr(
+                    "Archive {} already exists.\n"
+                    "Use the --overwrite flag to continue.".format(key_name)
+                )
                 sys.exit(1)
         else:
             key = self.bucket.new_key(key_name)
 
         url = key.generate_url(0, query_auth=False)
-        print('Uploading to: {}'.format(url))
+        print("Uploading to: {}".format(url))
 
         # Upload the archive, set permissions.
         key.set_contents_from_filename(self.archived_path)
-        key.set_acl('public-read')
+        key.set_acl("public-read")
 
-        print('Upload complete!')
+        print("Upload complete!")

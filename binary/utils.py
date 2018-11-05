@@ -12,8 +12,8 @@ import boto
 from boto.exception import NoAuthHandlerFound, S3ResponseError
 
 
-def print_stderr(message, prefix='ERROR'):
-    print('\n{}: {}\n'.format(prefix, message), file=sys.stderr)
+def print_stderr(message, prefix="ERROR"):
+    print("\n{}: {}\n".format(prefix, message), file=sys.stderr)
 
 
 def iter_marker_lines(marker, formula, strip=True):
@@ -24,7 +24,7 @@ def iter_marker_lines(marker, formula, strip=True):
             if line.startswith(marker):
 
                 if strip:
-                    line = line[len(marker):]
+                    line = line[len(marker) :]
                     line = line.strip()
 
                 yield line
@@ -49,25 +49,25 @@ def process(cmd, cwd=None):
 def pipe(a, b, indent=True):
     """Pipes stream A to stream B, with optional indentation."""
 
-    for line in iter(a.readline, b''):
+    for line in iter(a.readline, b""):
 
         if indent:
-            b.write('    ')
+            b.write("    ")
 
         b.write(line)
 
 
 def archive_tree(dir, archive):
     """Creates a tar.gz archive from a given directory."""
-    with tarfile.open(archive, 'w:gz') as tar:
+    with tarfile.open(archive, "w:gz") as tar:
         # do not tar.add(dir) with empty arcname, that will create a "/" entry and tar will complain when extracting
         for item in os.listdir(dir):
-            tar.add(dir+"/"+item, arcname=item)
+            tar.add(dir + "/" + item, arcname=item)
 
 
 def extract_tree(archive, dir):
     """Extract tar.gz archive to a given directory."""
-    with tarfile.open(archive, 'r:gz') as tar:
+    with tarfile.open(archive, "r:gz") as tar:
         tar.extractall(dir)
 
 
@@ -86,8 +86,10 @@ class S3ConnectionHandler(object):
         try:
             self.s3 = boto.connect_s3()
         except NoAuthHandlerFound:
-            print_stderr('No AWS credentials found. Requests will be made without authentication.',
-                         prefix='WARNING')
+            print_stderr(
+                "No AWS credentials found. Requests will be made without authentication.",
+                prefix="WARNING",
+            )
             self.s3 = boto.connect_s3(anon=True)
 
     def get_bucket(self, name):
@@ -95,9 +97,11 @@ class S3ConnectionHandler(object):
             return self.s3.get_bucket(name)
         except S3ResponseError as e:
             if e.status == 403 and not self.s3.anon:
-                print('Access denied for bucket "{}" using found credentials. '
-                      'Retrying as an anonymous user.'.format(name))
-                if not hasattr(self, 's3_anon'):
+                print(
+                    'Access denied for bucket "{}" using found credentials. '
+                    "Retrying as an anonymous user.".format(name)
+                )
+                if not hasattr(self, "s3_anon"):
                     self.s3_anon = boto.connect_s3(anon=True)
                 return self.s3_anon.get_bucket(name)
             raise

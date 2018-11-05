@@ -1,3 +1,4 @@
+#!usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
 """Usage: bob build <formula>
@@ -12,7 +13,6 @@ Options:
 Configuration:
     Environment Variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET, S3_PREFIX (optional), UPSTREAM_S3_BUCKET (optional), UPSTREAM_S3_PREFIX (optional)
 """
-from __future__ import print_function
 
 import sys
 
@@ -39,20 +39,20 @@ def build(formula):
 def deploy(formula, overwrite):
     f = build(formula)
 
-    print('Archiving.')
+    print("Archiving.")
     f.archive()
 
-    print('Deploying.')
+    print("Deploying.")
     f.deploy(allow_overwrite=overwrite)
 
 
 def main():
     args = docopt(__doc__)
 
-    formula = args['<formula>']
-    do_build = args['build']
-    do_deploy = args['deploy']
-    do_overwrite = args['--overwrite']
+    formula = args["<formula>"]
+    do_build = args["build"]
+    do_deploy = args["deploy"]
+    do_overwrite = args["--overwrite"]
 
     if do_build:
         build(formula)
@@ -65,5 +65,5 @@ def dispatch():
     try:
         main()
     except KeyboardInterrupt:
-        print('ool.')
+        print("ool.")
         sys.exit(130)
